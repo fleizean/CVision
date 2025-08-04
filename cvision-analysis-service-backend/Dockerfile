@@ -17,11 +17,24 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Microsoft ODBC Driver for SQL Server
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
-    && apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
-    && rm -rf /var/lib/apt/lists/*
+# Note: Microsoft ODBC driver is only available for x86_64/amd64, not ARM64
+# For ARM64, we'll use FreeTDS as an alternative ODBC driver for SQL Server
+RUN if [ "$(uname -m)" = "x86_64" ]; then \
+        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg && \
+        curl -fsSL https://packages.microsoft.com/config/debian/12/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+        apt-get update && \
+        ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
+        rm -rf /var/lib/apt/lists/*; \
+    else \
+        apt-get update && \
+        apt-get install -y freetds-dev freetds-bin tdsodbc odbcinst && \
+        echo "[FreeTDS]" >> /etc/odbcinst.ini && \
+        echo "Description=FreeTDS Driver for SQL Server" >> /etc/odbcinst.ini && \
+        echo "Driver=/usr/lib/$(uname -m)-linux-gnu/odbc/libtdsodbc.so" >> /etc/odbcinst.ini && \
+        echo "Setup=/usr/lib/$(uname -m)-linux-gnu/odbc/libtdsS.so" >> /etc/odbcinst.ini && \
+        echo "FileUsage=1" >> /etc/odbcinst.ini && \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
 
 FROM base AS dependencies
 
