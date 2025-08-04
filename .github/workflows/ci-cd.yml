@@ -30,16 +30,33 @@ jobs:
           SA_PASSWORD: TestPassword123!
           ACCEPT_EULA: Y
           MSSQL_PID: Express
+          MSSQL_MEMORY_LIMIT_MB: 2048
         options: >-
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q 'SELECT 1' || exit 1"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 5
+          --name sqlserver
         ports:
           - 1433:1433
 
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Wait for SQL Server
+      run: |
+        echo "Waiting for SQL Server to be ready..."
+        # Install sqlcmd first
+        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+        curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+        export PATH="$PATH:/opt/mssql-tools/bin"
+        
+        for i in {1..30}; do
+          if /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'TestPassword123!' -Q "SELECT 1" &> /dev/null; then
+            echo "SQL Server is ready!"
+            break
+          fi
+          echo "Attempt $i: SQL Server not ready, waiting 5 seconds..."
+          sleep 5
+        done
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -111,16 +128,33 @@ jobs:
           SA_PASSWORD: TestPassword123!
           ACCEPT_EULA: Y
           MSSQL_PID: Express
+          MSSQL_MEMORY_LIMIT_MB: 2048
         options: >-
-          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q 'SELECT 1' || exit 1"
-          --health-interval 30s
-          --health-timeout 10s
-          --health-retries 5
+          --name sqlserver
         ports:
           - 1433:1433
     
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Wait for SQL Server
+      run: |
+        echo "Waiting for SQL Server to be ready..."
+        # Install sqlcmd first
+        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+        curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+        export PATH="$PATH:/opt/mssql-tools/bin"
+        
+        for i in {1..30}; do
+          if /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'TestPassword123!' -Q "SELECT 1" &> /dev/null; then
+            echo "SQL Server is ready!"
+            break
+          fi
+          echo "Attempt $i: SQL Server not ready, waiting 5 seconds..."
+          sleep 5
+        done
     
     - name: Setup Python
       uses: actions/setup-python@v4
