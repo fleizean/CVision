@@ -17,6 +17,8 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
     name: Test Backend (.NET)
+    permissions:
+      contents: read
     
     services:
       sqlserver:
@@ -56,6 +58,8 @@ jobs:
   test-frontend:
     runs-on: ubuntu-latest
     name: Test Frontend (Next.js)
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -94,6 +98,8 @@ jobs:
   test-analysis-service:
     runs-on: ubuntu-latest
     name: Test Analysis Service (Python)
+    permissions:
+      contents: read
     
     services:
       sqlserver:
@@ -235,6 +241,10 @@ jobs:
     needs: [build-and-push]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: staging
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
     
     steps:
     - name: Checkout
@@ -258,6 +268,10 @@ jobs:
     needs: [build-and-push]
     if: github.event_name == 'release' && github.event.action == 'published'
     environment: production
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
     
     steps:
     - name: Checkout
