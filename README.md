@@ -1,7 +1,7 @@
 # 🎯 CVision - AI-Powered CV Analysis Platform
 
 <p align="center">
-   <img src="assets/logo.png" />
+   <img src="assets/logo.png" width="200px" height="200px" />
 
 <div align="center">
 
