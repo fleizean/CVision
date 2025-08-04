@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -358,9 +359,11 @@ namespace CVisionBackend.API.Controllers
         private string GenerateTemporaryPassword()
         {
             const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%";
-            var random = new Random();
-            return new string(Enumerable.Repeat(chars, 12)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+            using var rng = RandomNumberGenerator.Create();
+            var bytes = new byte[12];
+            rng.GetBytes(bytes);
+            
+            return new string(bytes.Select(b => chars[b % chars.Length]).ToArray());
         }
     }
 }

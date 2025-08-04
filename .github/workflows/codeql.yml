@@ -38,6 +38,9 @@ jobs:
       # only required for workflows in private repositories
       actions: read
       contents: read
+      
+      # required for OIDC token access
+      id-token: write
 
     strategy:
       fail-fast: false
