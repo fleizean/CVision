@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  # Database - SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: cvision-sqlserver
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD:-YourStrongPassword123!}
+      ACCEPT_EULA: Y
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/lib/mssql/data
+      - ./scripts/init-mssql.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - cvision-network
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD:-YourStrongPassword123!} -Q 'SELECT 1' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./cvision-backend
+      dockerfile: Dockerfile
+    container_name: cvision-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__SQLServer=Server=sqlserver,1433;Database=cvisionDb;User Id=sa;Password=${SA_PASSWORD:-YourStrongPassword123!};Encrypt=False
+      - Token__SecurityKey=${TOKEN_SECURITY_KEY:-your-super-secret-jwt-key-here-minimum-32-characters-long}
+      - Token__Issuer=${TOKEN_ISSUER:-your-domain.com}
+      - Token__Audience=${TOKEN_AUDIENCE:-your-domain.com}
+      - Token__Expiration=${TOKEN_EXPIRATION:-60}
+      - MailSettings__Mail=${MAIL_SETTINGS_MAIL}
+      - MailSettings__UserName=${MAIL_SETTINGS_USERNAME}
+      - MailSettings__Password=${MAIL_SETTINGS_PASSWORD}
+      - MailSettings__SmtpHost=${MAIL_SETTINGS_SMTP_HOST}
+      - MailSettings__SmtpPort=${MAIL_SETTINGS_SMTP_PORT:-587}
+      - AppInfo__Name=CVision
+      - AppInfo__Version=1.0.0
+      - AppInfo__Url=http://localhost:8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - backend_uploads:/app/uploads
+      - backend_logs:/app/logs
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - cvision-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Analysis Service
+  analysis-service:
+    build:
+      context: ./cvision-analysis-service-backend
+      dockerfile: Dockerfile
+    container_name: cvision-analysis-service
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=mssql://sa:${SA_PASSWORD:-YourStrongPassword123!}@sqlserver:1433/cvisionDb
+    ports:
+      - "8000:8000"
+    volumes:
+      - analysis_uploads:/app/uploads
+      - analysis_logs:/app/logs
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - cvision-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./cvision-frontend
+      dockerfile: Dockerfile
+    container_name: cvision-frontend
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      - NEXT_PUBLIC_ANALYSIS_SERVICE_URL=${NEXT_PUBLIC_ANALYSIS_SERVICE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+      analysis-service:
+        condition: service_healthy
+    networks:
+      - cvision-network
+    healthcheck:
+      test: ["CMD", "node", "healthcheck.js"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cvision-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+      - analysis-service
+    networks:
+      - cvision-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_logs:
+    driver: local
+  analysis_uploads:
+    driver: local
+  analysis_logs:
+    driver: local
+
+networks:
+  cvision-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

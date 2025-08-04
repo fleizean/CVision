@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Çocuksa - Duyuru</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .title {
+            color: #667eea;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .message-box {
+            background-color: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #dee2e6;
+        }
+        .app-name {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                ÇS
+            </div>
+            <h1 style="margin: 0; font-size: 28px;">
+                <span class="app-name" style="color: white;">
+                    Çocuksa
+                </span>
+            </h1>
+        </div>
+        <div class="content">
+            <div class="title">=â Duyuru</div>
+            <p>Say1n {{TO}},</p>
+            <div class="message-box">
+                <h3 style="color: #667eea; margin-top: 0;">{{SUBJECT}}</h3>
+                <div>{{BODY}}</div>
+            </div>
+            <p>Bu duyuru tüm velilerimize gönderilmektedir.</p>
+        </div>
+        <div class="footer">
+            <p>Bu e-posta <strong class="app-name">Çocuksa</strong> anaokulu yönetim sistemi taraf1ndan otomatik olarak gönderilmi_tir.</p>
+            <p>Herhangi bir sorunuz varsa lütfen okul yönetimi ile ileti_ime geçin.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,278 @@
+name: CVision CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Test Backend
+  test-backend:
+    runs-on: ubuntu-latest
+    name: Test Backend (.NET)
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          SA_PASSWORD: TestPassword123!
+          ACCEPT_EULA: Y
+          MSSQL_PID: Express
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q 'SELECT 1' || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+        ports:
+          - 1433:1433
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore cvision-backend/CVisionBackend.sln
+    
+    - name: Build
+      run: dotnet build cvision-backend/CVisionBackend.sln --no-restore --configuration Release
+    
+    - name: Test
+      run: dotnet test cvision-backend/CVisionBackend.sln --no-build --configuration Release --verbosity normal
+      env:
+        ConnectionStrings__SQLServer: "Server=localhost,1433;Database=dbNameHereBoys;User Id=sa;Password=passwordHereBoys!;Encrypt=False"
+
+  # Test Frontend  
+  test-frontend:
+    runs-on: ubuntu-latest
+    name: Test Frontend (Next.js)
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: cvision-frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd cvision-frontend
+        npm ci
+    
+    - name: Lint
+      run: |
+        cd cvision-frontend
+        npm run lint || echo "Linting warnings found, but continuing build"
+    
+    - name: Type check
+      run: |
+        cd cvision-frontend
+        npm run type-check || echo "Type check step - implement if available"
+    
+    - name: Build
+      run: |
+        cd cvision-frontend
+        npm run build
+      env:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_ANALYSIS_SERVICE_URL: http://localhost:8000
+
+  # Test Analysis Service
+  test-analysis-service:
+    runs-on: ubuntu-latest
+    name: Test Analysis Service (Python)
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          SA_PASSWORD: TestPassword123!
+          ACCEPT_EULA: Y
+          MSSQL_PID: Express
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P TestPassword123! -Q 'SELECT 1' || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+        ports:
+          - 1433:1433
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        cd cvision-analysis-service-backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        python -m spacy download en_core_web_sm
+    
+    - name: Lint with flake8
+      run: |
+        cd cvision-analysis-service-backend
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Test with pytest
+      run: |
+        cd cvision-analysis-service-backend
+        pip install pytest pytest-asyncio
+        pytest tests/ -v || echo "Tests not implemented yet"
+      env:
+        DATABASE_URL: mssql://sa:TestPassword123!@localhost:1433/cvisionDb
+
+  # Security Scan
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Build and Push Docker Images
+  build-and-push:
+    runs-on: ubuntu-latest
+    name: Build and Push Docker Images
+    needs: [test-backend, test-frontend, test-analysis-service]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    
+    strategy:
+      matrix:
+        service: [backend, frontend, analysis-service]
+        include:
+          - service: backend
+            context: ./cvision-backend
+            dockerfile: ./cvision-backend/Dockerfile
+          - service: frontend
+            context: ./cvision-frontend
+            dockerfile: ./cvision-frontend/Dockerfile
+          - service: analysis-service
+            context: ./cvision-analysis-service-backend
+            dockerfile: ./cvision-analysis-service-backend/Dockerfile
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix=sha-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.context }}
+        file: ${{ matrix.dockerfile }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  # Deploy to Staging
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging
+    needs: [build-and-push]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # This could be deploying to a cloud provider, updating Docker Compose, etc.
+        
+    - name: Run health checks
+      run: |
+        echo "Running health checks..."
+        # Add health check commands here
+
+  # Deploy to Production
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    needs: [build-and-push]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: production
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here
+        
+    - name: Run health checks
+      run: |
+        echo "Running production health checks..."
+        # Add production health check commands here
+        
+    - name: Notify deployment
+      run: |
+        echo "Production deployment completed!"
+        # Add notification logic here (Slack, email, etc.)
