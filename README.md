@@ -1,5 +1,8 @@
 # 🎯 CVision - AI-Powered CV Analysis Platform
 
+<p align="center">
+   <img src="assets/logo.png" />
+
 <div align="center">
 
 [![CI/CD Pipeline](https://github.com/fleizean/cvision/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/fleizean/cvision/actions/workflows/ci-cd.yml)
