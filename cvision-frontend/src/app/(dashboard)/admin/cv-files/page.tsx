@@ -325,7 +325,7 @@ export default function AdminCVFilesPage() {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               {error}
             </p>
-            <Button onClick={fetchCVFiles}>
+            <Button onClick={() => fetchCVFiles()}>
               Try Again
             </Button>
           </div>
