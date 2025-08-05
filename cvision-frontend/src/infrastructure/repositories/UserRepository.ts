@@ -29,6 +29,27 @@ export interface UpdateUserRequest {
   RoleId: string;
 }
 
+export interface UserProfile {
+  Id: string;
+  Name: string;
+  Surname: string;
+  FullName: string;
+  Email: string;
+  UserName: string;
+  Roles: string[];
+  Stats: {
+    TotalCVFiles: number;
+    CompletedAnalyses: number;
+    PendingAnalyses: number;
+  };
+}
+
+export interface UpdateProfileRequest {
+  Name: string;
+  Surname: string;
+  Email: string;
+}
+
 export interface UserApiResponse {
   StatusCode: number;
   Message: string;
@@ -153,6 +174,33 @@ export class UserRepository {
       return {
         success: false,
         message: error.response?.data?.Message || 'Failed to send password reset email'
+      };
+    }
+  }
+
+  async getCurrentUserProfile(): Promise<UserProfile | null> {
+    try {
+      const response = await apiClient.get<UserApiResponse>(API_ENDPOINTS.USER.PROFILE);
+      return response.Data || null;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+  }
+
+  async updateCurrentUserProfile(profileData: UpdateProfileRequest): Promise<{ success: boolean, message?: string }> {
+    try {
+      const response = await apiClient.put<UserApiResponse>(API_ENDPOINTS.USER.UPDATE_PROFILE, profileData);
+      
+      return {
+        success: response.StatusCode === 200,
+        message: response.Message
+      };
+    } catch (error: any) {
+      console.error('Error updating user profile:', error);
+      return {
+        success: false,
+        message: error.response?.data?.Message || 'Failed to update profile'
       };
     }
   }

@@ -9,8 +9,8 @@ export const API_ENDPOINTS = {
     ME: '/api/auth/me',
   },
   USER: {
-    PROFILE: '/api/user/profile',
-    UPDATE_PROFILE: '/api/user/profile',
+    PROFILE: '/api/User/profile',
+    UPDATE_PROFILE: '/api/User/profile',
     CHANGE_PASSWORD: '/api/user/change-password',
   },
   ADMIN: {

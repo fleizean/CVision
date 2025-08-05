@@ -128,6 +128,7 @@ namespace CVisionBackend.Persistence
             services.AddScoped<IJobProfileService, JobProfileService>();
             services.AddScoped<ICVAnalysisService, CVAnalysisService>();
             services.AddScoped<IActivityService, ActivityService>();
+            services.AddScoped<IAnalyticsService, AnalyticsService>();
             
             services.AddScoped<SeedDataService>();
         }

@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     PORT: int = 8000
     
-    # Database settings (matching your .NET configuration)
-    DATABASE_URL: str = "mssql+pyodbc://sa:reallyStrongPassword1!@localhost:1433/cvisionDb?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
+    # Database settings (using pymssql instead of pyodbc)
+    DATABASE_URL: str = "mssql+pymssql://sa:reallyStrongPassword1!@localhost:1433/cvisionDb"
     
     # Alternative individual database components
     DB_SERVER: str = "localhost"

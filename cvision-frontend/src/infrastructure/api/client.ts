@@ -22,9 +22,6 @@ class ApiClient {
         const token = this.getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log(`Request to ${config.url}: Token attached`);
-        } else {
-          console.warn(`Request to ${config.url}: No token found`);
         }
         return config;
       },

@@ -94,6 +94,15 @@ export class CVFileRepository {
       };
     }
   }
+
+  async retryAnalysis(fileId: string): Promise<void> {
+    try {
+      await apiClient.post(`/api/CVAnalysis/retry/${fileId}`);
+    } catch (error) {
+      console.error('Error retrying analysis:', error);
+      throw error;
+    }
+  }
 }
 
 export const cvFileRepository = new CVFileRepository();

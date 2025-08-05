@@ -19,17 +19,20 @@ namespace CVisionBackend.Persistence.Services
         private readonly ICVAnalysisResultReadRepository _analysisResultReadRepository;
         private readonly ICVAnalysisResultWriteRepository _analysisResultWriteRepository;
         private readonly ICVFileReadRepository _cvFileReadRepository;
+        private readonly ICVFileWriteRepository _cvFileWriteRepository;
         private readonly IKeywordMatchReadRepository _keywordMatchReadRepository;
 
         public CVAnalysisService(
             ICVAnalysisResultReadRepository analysisResultReadRepository,
             ICVAnalysisResultWriteRepository analysisResultWriteRepository,
             ICVFileReadRepository cvFileReadRepository,
+            ICVFileWriteRepository cvFileWriteRepository,
             IKeywordMatchReadRepository keywordMatchReadRepository)
         {
             _analysisResultReadRepository = analysisResultReadRepository;
             _analysisResultWriteRepository = analysisResultWriteRepository;
             _cvFileReadRepository = cvFileReadRepository;
+            _cvFileWriteRepository = cvFileWriteRepository;
             _keywordMatchReadRepository = keywordMatchReadRepository;
         }
 
@@ -40,7 +43,9 @@ namespace CVisionBackend.Persistence.Services
                 var analysisResult = new CVAnalysisResult
                 {
                     CVFileId = analyzeCVDTO.FileId,
-                    Score = 0
+                    Score = 0,
+                    FormatIssuesJson = "[]",
+                    MissingSectionsJson = "[]"
                 };
 
                 await _analysisResultWriteRepository.AddAsync(analysisResult);
@@ -215,6 +220,64 @@ namespace CVisionBackend.Persistence.Services
                 {
                     StatusCode = HttpStatusCode.InternalServerError,
                                         Message = $"Analiz sonuçları getirilirken hata oluştu: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<CommonResponseMessage<object>> RetryAnalysisAsync(Guid fileId)
+        {
+            try
+            {
+                var cvFile = await _cvFileReadRepository.GetByIdAsync(fileId);
+
+                if (cvFile == null)
+                {
+                    return new CommonResponseMessage<object>
+                    {
+                        StatusCode = HttpStatusCode.NotFound,
+                        Message = "CV dosyası bulunamadı."
+                    };
+                }
+
+                // Get existing analysis result if exists
+                var existingAnalysisResult = await _analysisResultReadRepository.GetAll()
+                    .FirstOrDefaultAsync(ar => ar.CVFileId == fileId);
+
+                if (existingAnalysisResult != null)
+                {
+                    // Remove existing analysis result and keyword matches
+                    _analysisResultWriteRepository.Remove(existingAnalysisResult);
+                }
+
+                // Update CV file status to Pending
+                cvFile.AnalysisStatus = "Pending";
+                _cvFileWriteRepository.Update(cvFile);
+                await _cvFileWriteRepository.SaveAsync();
+
+                // Create new analysis result with pending status
+                var newAnalysisResult = new CVAnalysisResult
+                {
+                    CVFileId = fileId,
+                    Score = 0,
+                    FormatIssuesJson = "[]",
+                    MissingSectionsJson = "[]"
+                };
+
+                await _analysisResultWriteRepository.AddAsync(newAnalysisResult);
+                await _analysisResultWriteRepository.SaveAsync();
+
+                return new CommonResponseMessage<object>
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Message = "CV analizi yeniden başlatıldı."
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CommonResponseMessage<object>
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    Message = $"Analiz yeniden başlatılırken hata oluştu: {ex.Message}"
                 };
             }
         }

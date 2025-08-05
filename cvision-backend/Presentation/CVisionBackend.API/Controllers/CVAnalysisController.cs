@@ -48,6 +48,14 @@ namespace CVisionBackend.API.Controllers
             return StatusCode((int)result.StatusCode, result);
         }
 
+        [HttpPost("retry/{fileId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RetryAnalysis(Guid fileId)
+        {
+            var result = await _cvAnalysisService.RetryAnalysisAsync(fileId);
+            return StatusCode((int)result.StatusCode, result);
+        }
+
         [HttpDelete("result/{analysisResultId}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteAnalysisResult(Guid analysisResultId)

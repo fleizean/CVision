@@ -13,6 +13,7 @@ namespace CVisionBackend.Application.Abstractions.Services
         Task<CommonResponseMessage<GetAnalysisResultDTO>> GetAnalysisResultByIdAsync(Guid analysisResultId);
         Task<CommonResponseMessage<List<GetAnalysisResultDTO>>> GetAnalysisResultsByScoreRangeAsync(int minScore, int maxScore);
         Task<CommonResponseMessage<List<GetAnalysisResultDTO>>> GetAllAnalysisResultsAsync();
+        Task<CommonResponseMessage<object>> RetryAnalysisAsync(Guid fileId);
         Task<CommonResponseMessage<object>> DeleteAnalysisResultAsync(Guid analysisResultId);
     }
 }

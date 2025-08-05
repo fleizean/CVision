@@ -3,30 +3,23 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 from loguru import logger
-import pyodbc
 from app.core.config import settings
 
 # Create database engine
 try:
-    # Check ODBC drivers
-    drivers = [driver for driver in pyodbc.drivers() if "SQL Server" in driver]
-    if drivers:
-        logger.info(f"Available SQL Server drivers: {drivers}")
-    else:
-        logger.warning("No SQL Server ODBC drivers found")
-    
-    # Create engine with connection pooling
+    # Create engine with pymssql driver
     engine = create_engine(
-        settings.get_database_url(),
+        settings.DATABASE_URL,
         poolclass=StaticPool,
         pool_pre_ping=True,
         pool_recycle=300,
         echo=settings.DEBUG  # Log SQL queries in debug mode
     )
-    logger.info("Database engine created successfully")
+    logger.info("MSSQL database engine created successfully with pymssql")
     
 except Exception as e:
     logger.error(f"Failed to create database engine: {e}")
+    logger.error(f"Connection string: {settings.DATABASE_URL}")
     raise
 
 # Create SessionLocal class
@@ -48,7 +41,7 @@ def init_db():
     try:
         # Test connection
         with engine.connect() as connection:
-            logger.info("Database connection successful")
+            logger.info("MSSQL database connection successful")
         
         # Note: Tables should already exist from .NET migrations
         # We're just importing the models to ensure they're mapped correctly

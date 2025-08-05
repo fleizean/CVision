@@ -29,6 +29,7 @@ export default function AdminCVFilesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [isPolling, setIsPolling] = useState(false)
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean
     title: string
@@ -44,13 +45,30 @@ export default function AdminCVFilesPage() {
     fetchCVFiles()
   }, [])
 
+  // Set up polling when there are pending files
+  useEffect(() => {
+    const hasPendingFiles = cvFiles.some(file => file.AnalysisStatus === 'Pending')
+    
+    setIsPolling(hasPendingFiles && !isLoading)
+    
+    if (hasPendingFiles && !isLoading) {
+      const interval = setInterval(() => {
+        fetchCVFiles(false) // Don't show loading spinner for polling
+      }, 5000) // Poll every 5 seconds when there are pending files
+      
+      return () => clearInterval(interval)
+    }
+  }, [cvFiles, isLoading])
+
   useEffect(() => {
     filterFiles()
   }, [cvFiles, searchTerm, statusFilter, typeFilter])
 
-  const fetchCVFiles = async () => {
+  const fetchCVFiles = async (showLoading = true) => {
     try {
-      setIsLoading(true)
+      if (showLoading) {
+        setIsLoading(true)
+      }
       setError(null)
       
       const result = await cvFileRepository.getAllFilesWithUserInfo()
@@ -59,7 +77,9 @@ export default function AdminCVFilesPage() {
       console.error('Error fetching CV files:', err)
       setError('Failed to load CV files')
     } finally {
-      setIsLoading(false)
+      if (showLoading) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -239,11 +259,7 @@ export default function AdminCVFilesPage() {
     setConfirmDialog(prev => ({ ...prev, isLoading: true }))
     
     try {
-      // TODO: Implement retry analysis API call when available
-      // await cvFileRepository.retryAnalysis(fileId)
-      
-      // For now, simulate the retry and update status to Pending
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      await cvFileRepository.retryAnalysis(fileId)
       
       // Update local state to show Pending status
       setCvFiles(prev => prev.map(file => 
@@ -252,14 +268,17 @@ export default function AdminCVFilesPage() {
           : file
       ))
       
-      // Show success message
+      // Show success message and refresh data
       setConfirmDialog({
         isOpen: true,
         title: 'Analysis Restarted',
         message: `Analysis for "${fileName}" has been restarted and is now pending.`,
         variant: 'success',
         confirmText: 'OK',
-        onConfirm: () => setConfirmDialog(prev => ({ ...prev, isOpen: false }))
+        onConfirm: () => {
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }))
+          fetchCVFiles(false) // Refresh data without loading spinner
+        }
       })
     } catch (error) {
       console.error('Error retrying analysis:', error)
@@ -341,10 +360,24 @@ export default function AdminCVFilesPage() {
                 </p>
               </div>
             </div>
-            <Button onClick={fetchCVFiles} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            
+            <div className="flex items-center space-x-3">
+              {/* Real-time Status Indicator */}
+              {isPolling && (
+                <div className="flex items-center space-x-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-full border border-blue-200 dark:border-blue-800">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    Live updates active
+                  </span>
+                </div>
+              )}
+              
+              {/* Refresh Button */}
+              <Button onClick={() => fetchCVFiles()} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -374,13 +407,27 @@ export default function AdminCVFilesPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-6 ${
+            statusStats.pending > 0 
+              ? 'border-yellow-300 dark:border-yellow-600 bg-yellow-50 dark:bg-yellow-900/10' 
+              : 'border-gray-200 dark:border-gray-700'
+          }`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
+                  {statusStats.pending > 0 && isPolling && (
+                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
+                  )}
+                </div>
                 <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                   {statusStats.pending}
                 </p>
+                {statusStats.pending > 0 && isPolling && (
+                  <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                    Auto-updating every 5s
+                  </p>
+                )}
               </div>
               <Clock className="h-8 w-8 text-yellow-500" />
             </div>

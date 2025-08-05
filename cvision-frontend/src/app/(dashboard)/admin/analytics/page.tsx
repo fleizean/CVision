@@ -16,47 +16,11 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
-
-interface AnalyticsData {
-  overview: {
-    totalUsers: number
-    totalCVFiles: number
-    totalAnalyses: number
-    avgAnalysisScore: number
-    userGrowthRate: number
-    fileUploadRate: number
-  }
-  analysisStats: {
-    completed: number
-    pending: number
-    failed: number
-    avgProcessingTime: number
-  }
-  userActivity: {
-    activeUsers: number
-    newUsersThisMonth: number
-    returningUsers: number
-  }
-  scoreDistribution: {
-    excellent: number // 90-100
-    good: number      // 75-89
-    average: number   // 60-74
-    poor: number      // 0-59
-  }
-  monthlyData: {
-    month: string
-    users: number
-    uploads: number
-    analyses: number
-  }[]
-  topKeywords: {
-    keyword: string
-    count: number
-  }[]
-}
+import { analyticsRepository, AnalyticsData } from '@/infrastructure/repositories/AnalyticsRepository'
 
 export default function AdminAnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
@@ -74,57 +38,8 @@ export default function AdminAnalyticsPage() {
       setIsLoading(true)
       setError(null)
       
-      // TODO: Replace with actual API call
-      // const response = await apiCall(`http://localhost:5117/api/admin/analytics?range=${timeRange}`)
-      // const result = await response.json()
-      
-      // Mock data for now
-      const mockAnalytics: AnalyticsData = {
-        overview: {
-          totalUsers: 1250,
-          totalCVFiles: 5420,
-          totalAnalyses: 4890,
-          avgAnalysisScore: 73.5,
-          userGrowthRate: 12.5,
-          fileUploadRate: 8.3
-        },
-        analysisStats: {
-          completed: 4350,
-          pending: 285,
-          failed: 255,
-          avgProcessingTime: 145 // seconds
-        },
-        userActivity: {
-          activeUsers: 892,
-          newUsersThisMonth: 124,
-          returningUsers: 768
-        },
-        scoreDistribution: {
-          excellent: 15,
-          good: 35,
-          average: 35,
-          poor: 15
-        },
-        monthlyData: [
-          { month: 'Jan', users: 980, uploads: 420, analyses: 380 },
-          { month: 'Feb', users: 1050, uploads: 520, analyses: 480 },
-          { month: 'Mar', users: 1120, uploads: 680, analyses: 620 },
-          { month: 'Apr', users: 1180, uploads: 750, analyses: 720 },
-          { month: 'May', users: 1250, uploads: 820, analyses: 780 }
-        ],
-        topKeywords: [
-          { keyword: 'JavaScript', count: 1240 },
-          { keyword: 'React', count: 980 },
-          { keyword: 'Python', count: 875 },
-          { keyword: 'Node.js', count: 720 },
-          { keyword: 'TypeScript', count: 650 },
-          { keyword: 'AWS', count: 590 },
-          { keyword: 'Docker', count: 520 },
-          { keyword: 'MongoDB', count: 480 }
-        ]
-      }
-      
-      setAnalytics(mockAnalytics)
+      const analyticsData = await analyticsRepository.getAnalyticsData(timeRange)
+      setAnalytics(analyticsData)
     } catch (err) {
       console.error('Error fetching analytics:', err)
       setError('Failed to load analytics data')
@@ -221,17 +136,25 @@ export default function AdminAnalyticsPage() {
               </div>
             </div>
             
-            {/* Time Range Selector */}
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="7days">Last 7 days</option>
-              <option value="30days">Last 30 days</option>
-              <option value="90days">Last 90 days</option>
-              <option value="1year">Last year</option>
-            </select>
+            <div className="flex items-center space-x-3">
+              {/* Refresh Button */}
+              <Button onClick={fetchAnalytics} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              
+              {/* Time Range Selector */}
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="7days">Last 7 days</option>
+                <option value="30days">Last 30 days</option>
+                <option value="90days">Last 90 days</option>
+                <option value="1year">Last year</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -241,16 +164,16 @@ export default function AdminAnalyticsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-2">
               <Users className="h-8 w-8 text-blue-500" />
-              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.overview.userGrowthRate)}`}>
-                {getGrowthIcon(analytics.overview.userGrowthRate)}
+              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.Overview.UserGrowthRate)}`}>
+                {getGrowthIcon(analytics.Overview.UserGrowthRate)}
                 <span className="text-sm font-medium">
-                  {analytics.overview.userGrowthRate > 0 ? '+' : ''}{analytics.overview.userGrowthRate}%
+                  {analytics.Overview.UserGrowthRate > 0 ? '+' : ''}{analytics.Overview.UserGrowthRate}%
                 </span>
               </div>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {analytics.overview.totalUsers.toLocaleString()}
+                {analytics.Overview.TotalUsers.toLocaleString()}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Users</p>
             </div>
@@ -260,16 +183,16 @@ export default function AdminAnalyticsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-2">
               <FileText className="h-8 w-8 text-green-500" />
-              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.overview.fileUploadRate)}`}>
-                {getGrowthIcon(analytics.overview.fileUploadRate)}
+              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.Overview.FileUploadRate)}`}>
+                {getGrowthIcon(analytics.Overview.FileUploadRate)}
                 <span className="text-sm font-medium">
-                  {analytics.overview.fileUploadRate > 0 ? '+' : ''}{analytics.overview.fileUploadRate}%
+                  {analytics.Overview.FileUploadRate > 0 ? '+' : ''}{analytics.Overview.FileUploadRate}%
                 </span>
               </div>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {analytics.overview.totalCVFiles.toLocaleString()}
+                {analytics.Overview.TotalCVFiles.toLocaleString()}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">CV Files</p>
             </div>
@@ -282,13 +205,13 @@ export default function AdminAnalyticsPage() {
               <div className="flex items-center space-x-1">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {formatProcessingTime(analytics.analysisStats.avgProcessingTime)} avg
+                  {formatProcessingTime(analytics.AnalysisStats.AvgProcessingTime)} avg
                 </span>
               </div>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {analytics.overview.totalAnalyses.toLocaleString()}
+                {analytics.Overview.TotalAnalyses.toLocaleString()}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Analyses Completed</p>
             </div>
@@ -301,13 +224,13 @@ export default function AdminAnalyticsPage() {
               <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div 
                   className="bg-orange-500 h-2 rounded-full" 
-                  style={{ width: `${analytics.overview.avgAnalysisScore}%` }}
+                  style={{ width: `${analytics.Overview.AvgAnalysisScore}%` }}
                 ></div>
               </div>
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {analytics.overview.avgAnalysisScore}%
+                {analytics.Overview.AvgAnalysisScore}%
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Average Score</p>
             </div>
@@ -329,7 +252,7 @@ export default function AdminAnalyticsPage() {
                   <div>
                     <p className="text-sm text-green-600 dark:text-green-400">Completed</p>
                     <p className="text-xl font-bold text-green-700 dark:text-green-300">
-                      {analytics.analysisStats.completed.toLocaleString()}
+                      {analytics.AnalysisStats.Completed.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -340,7 +263,7 @@ export default function AdminAnalyticsPage() {
                   <div>
                     <p className="text-sm text-yellow-600 dark:text-yellow-400">Pending</p>
                     <p className="text-xl font-bold text-yellow-700 dark:text-yellow-300">
-                      {analytics.analysisStats.pending.toLocaleString()}
+                      {analytics.AnalysisStats.Pending.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -351,7 +274,7 @@ export default function AdminAnalyticsPage() {
                   <div>
                     <p className="text-sm text-red-600 dark:text-red-400">Failed</p>
                     <p className="text-xl font-bold text-red-700 dark:text-red-300">
-                      {analytics.analysisStats.failed.toLocaleString()}
+                      {analytics.AnalysisStats.Failed.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -370,21 +293,21 @@ export default function AdminAnalyticsPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Active Users</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {analytics.userActivity.activeUsers.toLocaleString()}
+                    {analytics.UserActivity.ActiveUsers.toLocaleString()}
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">New This Month</span>
                   <span className="font-medium text-green-600 dark:text-green-400">
-                    +{analytics.userActivity.newUsersThisMonth.toLocaleString()}
+                    +{analytics.UserActivity.NewUsersThisMonth.toLocaleString()}
                   </span>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Returning Users</span>
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {analytics.userActivity.returningUsers.toLocaleString()}
+                    {analytics.UserActivity.ReturningUsers.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -406,11 +329,11 @@ export default function AdminAnalyticsPage() {
                   <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-green-500 h-2 rounded-full" 
-                      style={{ width: `${analytics.scoreDistribution.excellent}%` }}
+                      style={{ width: `${analytics.ScoreDistribution.Excellent}%` }}
                     ></div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                    {analytics.scoreDistribution.excellent}%
+                    {analytics.ScoreDistribution.Excellent}%
                   </span>
                 </div>
               </div>
@@ -421,11 +344,11 @@ export default function AdminAnalyticsPage() {
                   <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-blue-500 h-2 rounded-full" 
-                      style={{ width: `${analytics.scoreDistribution.good}%` }}
+                      style={{ width: `${analytics.ScoreDistribution.Good}%` }}
                     ></div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                    {analytics.scoreDistribution.good}%
+                    {analytics.ScoreDistribution.Good}%
                   </span>
                 </div>
               </div>
@@ -436,11 +359,11 @@ export default function AdminAnalyticsPage() {
                   <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-yellow-500 h-2 rounded-full" 
-                      style={{ width: `${analytics.scoreDistribution.average}%` }}
+                      style={{ width: `${analytics.ScoreDistribution.Average}%` }}
                     ></div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                    {analytics.scoreDistribution.average}%
+                    {analytics.ScoreDistribution.Average}%
                   </span>
                 </div>
               </div>
@@ -451,11 +374,11 @@ export default function AdminAnalyticsPage() {
                   <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-red-500 h-2 rounded-full" 
-                      style={{ width: `${analytics.scoreDistribution.poor}%` }}
+                      style={{ width: `${analytics.ScoreDistribution.Poor}%` }}
                     ></div>
                   </div>
                   <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                    {analytics.scoreDistribution.poor}%
+                    {analytics.ScoreDistribution.Poor}%
                   </span>
                 </div>
               </div>
@@ -469,25 +392,25 @@ export default function AdminAnalyticsPage() {
             </h2>
             
             <div className="space-y-3">
-              {analytics.topKeywords.map((item, index) => (
-                <div key={item.keyword} className="flex items-center justify-between">
+              {analytics.TopKeywords.map((item, index) => (
+                <div key={item.Keyword} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400 w-4">
                       {index + 1}
                     </span>
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {item.keyword}
+                      {item.Keyword}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div 
                         className="bg-blue-500 h-2 rounded-full" 
-                        style={{ width: `${(item.count / analytics.topKeywords[0].count) * 100}%` }}
+                        style={{ width: `${(item.Count / analytics.TopKeywords[0].Count) * 100}%` }}
                       ></div>
                     </div>
                     <span className="text-sm text-gray-600 dark:text-gray-400 w-12 text-right">
-                      {item.count}
+                      {item.Count}
                     </span>
                   </div>
                 </div>

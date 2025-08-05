@@ -17,7 +17,6 @@ namespace CVisionBackend.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(AuthenticationSchemes = "admin")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -31,7 +30,116 @@ namespace CVisionBackend.API.Controllers
             _cvFileReadRepository = cvFileReadRepository;
         }
 
+        [HttpGet("profile")]
+        [Authorize] // Normal user can access their own profile
+        public async Task<IActionResult> GetCurrentUserProfile()
+        {
+            try
+            {
+                var userId = User.FindFirst("UserId")?.Value; // Gets the user ID from JWT token
+                                Console.WriteLine($"User ID from token: {userId}");
+
+                if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+                {
+                    return Unauthorized(new CommonResponseMessage<object>
+                    {
+                        StatusCode = System.Net.HttpStatusCode.Unauthorized,
+                        Message = "Invalid user token"
+                    });
+                }
+
+                var user = await _userService.GetByIdUser(userGuid);
+                if (user == null)
+                {
+                    return NotFound(new CommonResponseMessage<object>
+                    {
+                        StatusCode = System.Net.HttpStatusCode.NotFound,
+                        Message = "User not found"
+                    });
+                }
+
+                var appUser = await _userManager.FindByIdAsync(userGuid.ToString());
+                if (appUser != null)
+                {
+                    var cvFiles = await _cvFileReadRepository.GetFilesByUserIdAsync(userGuid, false);
+                    var cvFilesCount = cvFiles?.Count() ?? 0;
+                    var completedFiles = cvFiles?.Where(f => f.AnalysisStatus == "Completed").Count() ?? 0;
+                    var pendingFiles = cvFiles?.Where(f => f.AnalysisStatus == "Pending").Count() ?? 0;
+
+                    var profileData = new
+                    {
+                        Id = user.Id.ToString(),
+                        Name = user.Name,
+                        Surname = user.Surname,
+                        FullName = $"{user.Name} {user.Surname}",
+                        Email = user.Email,
+                        UserName = appUser.UserName,
+                        Roles = user.Roles,
+                        Stats = new
+                        {
+                            TotalCVFiles = cvFilesCount,
+                            CompletedAnalyses = completedFiles,
+                            PendingAnalyses = pendingFiles
+                        }
+                    };
+
+                    return Ok(new CommonResponseMessage<object>
+                    {
+                        StatusCode = System.Net.HttpStatusCode.OK,
+                        Message = "Profile retrieved successfully",
+                        Data = profileData
+                    });
+                }
+
+                return NotFound(new CommonResponseMessage<object>
+                {
+                    StatusCode = System.Net.HttpStatusCode.NotFound,
+                    Message = "User profile not found"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new CommonResponseMessage<object>
+                {
+                    StatusCode = System.Net.HttpStatusCode.InternalServerError,
+                    Message = $"Error retrieving profile: {ex.Message}"
+                });
+            }
+        }
+
+        [HttpPut("profile")]
+        [Authorize] // Normal user can update their own profile
+        public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UpdateUserDTO updateUserDTO)
+        {
+            try
+            {
+                var userId = User.FindFirst("UserId")?.Value;
+                if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+                {
+                    return Unauthorized(new CommonResponseMessage<object>
+                    {
+                        StatusCode = System.Net.HttpStatusCode.Unauthorized,
+                        Message = "Invalid user token"
+                    });
+                }
+
+                updateUserDTO.Id = userGuid;
+                var result = await _userService.UpdateUserAsync(updateUserDTO);
+                
+                return StatusCode((int)result.StatusCode, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new CommonResponseMessage<object>
+                {
+                    StatusCode = System.Net.HttpStatusCode.InternalServerError,
+                    Message = $"Error updating profile: {ex.Message}"
+                });
+            }
+        }
+
         [HttpGet("admin/users")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> GetUsers([FromQuery] int page = 0, [FromQuery] int size = 50)
         {
             try
@@ -89,6 +197,7 @@ namespace CVisionBackend.API.Controllers
         }
 
         [HttpGet("admin/users/{id}")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> GetUser(Guid id)
         {
             try
@@ -148,6 +257,7 @@ namespace CVisionBackend.API.Controllers
         }
 
         [HttpPut("admin/users/{id}/toggle-status")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> ToggleUserStatus(Guid id)
         {
             try
@@ -206,6 +316,7 @@ namespace CVisionBackend.API.Controllers
         }
 
         [HttpPost("admin/users")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDTO createUserDTO)
         {
             try
@@ -232,6 +343,7 @@ namespace CVisionBackend.API.Controllers
         }
 
         [HttpPut("admin/users/{id}")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDTO updateUserDTO)
         {
             try
@@ -259,6 +371,7 @@ namespace CVisionBackend.API.Controllers
         }
 
         [HttpPost("admin/users/{id}/reset-password")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> ResetUserPassword(Guid id)
         {
             try
@@ -314,6 +427,7 @@ namespace CVisionBackend.API.Controllers
         }
 
         [HttpPost("admin/users/{id}/send-password-reset-email")]
+        [Authorize(AuthenticationSchemes = "admin")]
         public async Task<IActionResult> SendPasswordResetEmail(Guid id)
         {
             try
