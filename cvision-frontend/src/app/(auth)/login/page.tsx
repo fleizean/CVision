@@ -6,10 +6,10 @@ export default function LoginPage() {
       {/* Başlık */}
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Giriş Yap
+          Login
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Hesabınıza giriş yapın
+          Login with your account to continue
         </p>
       </div>
       
@@ -22,19 +22,20 @@ export default function LoginPage() {
           href="/forgot-password" 
           className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
         >
-          Şifrenizi mi unuttunuz?
+          Forgot your password?
         </a>
       </div>
       
       {/* Kayıt ol linki */}
       <div className="text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Hesabınız yok mu?{' '}
+          Don't have an account? 
+          {' '}
           <a 
             href="/register" 
             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
           >
-            Kayıt olun
+            Register here
           </a>
         </p>
       </div>
@@ -46,7 +47,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-gray-300 dark:border-gray-700" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">veya</span>
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">or continue with</span>
           </div>
         </div>
         

@@ -45,13 +45,13 @@ export function LoginForm() {
     const newErrors: Partial<LoginForm> = {}
 
     if (!form.email) {
-      newErrors.email = 'Email gereklidir'
+      newErrors.email = 'Email required'
     } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-      newErrors.email = 'Geçersiz email formatı'
+      newErrors.email = 'Invalid email address'
     }
 
     if (!form.password) {
-      newErrors.password = 'Şifre gereklidir'
+      newErrors.password = 'Password required'
     }
 
     setErrors(newErrors)
@@ -109,7 +109,7 @@ export function LoginForm() {
       {/* Email Field */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          E-posta
+          Email
         </label>
         <Input
           id="email"
@@ -117,7 +117,7 @@ export function LoginForm() {
           value={form.email}
           onChange={handleInputChange('email')}
           error={errors.email}
-          placeholder="ornek@email.com"
+          placeholder="example@email.com"
           required
         />
         {errors.email && (
@@ -128,7 +128,7 @@ export function LoginForm() {
       {/* Password Field */}
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Şifre
+          Password
         </label>
         <Input
           id="password"
@@ -151,7 +151,7 @@ export function LoginForm() {
         isLoading={isLoading}
         disabled={isLoading}
       >
-        {isLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+        {isLoading ? 'Logining...' : 'Login'}
       </Button>
     </form>
   )

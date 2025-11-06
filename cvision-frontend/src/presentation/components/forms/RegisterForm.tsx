@@ -37,29 +37,29 @@ export function RegisterForm() {
     const newErrors: Partial<RegisterForm> = {}
 
     if (!form.email) {
-      newErrors.email = 'Email gereklidir'
+      newErrors.email = 'Email is required'
     } else if (!/\S+@\S+\.\S+/.test(form.email)) {
-      newErrors.email = 'Geçersiz email formatı'
+      newErrors.email = 'Invalid email format'
     }
 
     if (!form.name.trim()) {
-      newErrors.name = 'Ad gereklidir'
+      newErrors.name = 'First name is required'
     }
 
     if (!form.surname.trim()) {
-      newErrors.surname = 'Soyad gereklidir'
+      newErrors.surname = 'Last name is required'
     }
 
     if (!form.password) {
-      newErrors.password = 'Şifre gereklidir'
+      newErrors.password = 'Password is required'
     } else if (form.password.length < 6) {
-      newErrors.password = 'Şifre en az 6 karakter olmalıdır'
+      newErrors.password = 'Password must be at least 6 characters'
     }
 
     if (!form.passwordConfirm) {
-      newErrors.passwordConfirm = 'Şifre onayı gereklidir'
+      newErrors.passwordConfirm = 'Password confirmation is required'
     } else if (form.password !== form.passwordConfirm) {
-      newErrors.passwordConfirm = 'Şifreler eşleşmiyor'
+      newErrors.passwordConfirm = 'Passwords do not match'
     }
 
     setErrors(newErrors)
@@ -89,25 +89,24 @@ export function RegisterForm() {
       })
 
       const data: RegisterResponse = await response.json()
-      console.log('Register response:', data)
 
       if (data.statusCode === 200) {
-        router.push('/login?message=Kayıt başarılı. Lütfen giriş yapın.')
+        router.push('/login?message=Registration successful! Please login.')
       } else if (data.statusCode === 400) {
         // Extract the specific error message from the response
-        const errorMessage = data.message || 'Kayıt başarısız'
+        const errorMessage = data.message || 'Register not successful. Please try again.'
         // Check if it's an email-related error
         if (errorMessage.toLowerCase().includes('username') && errorMessage.toLowerCase().includes('already taken')) {
-          setErrors({ email: 'Bu e-posta adresi zaten kullanılmakta.' })
+          setErrors({ email: 'This email is already registered.' })
         } else {
           setErrors({ email: errorMessage })
         }
       }
       else {
-        setErrors({ email: 'Kayıt başarısız. Lütfen tekrar deneyin.' })
+        setErrors({ email: 'Register not successful. Please try again.' })
       }
     } catch (error) {
-      setErrors({ email: 'Bağlantı hatası. Lütfen tekrar deneyin.' })
+      setErrors({ email: 'Network error. Please check your connection and try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -128,7 +127,7 @@ export function RegisterForm() {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Ad
+            Firstname
           </label>
           <Input
             id="name"
@@ -136,7 +135,7 @@ export function RegisterForm() {
             value={form.name}
             onChange={handleInputChange('name')}
             error={errors.name}
-            placeholder="Adınız"
+            placeholder="Firstname"
             required
           />
           {errors.name && (
@@ -146,7 +145,7 @@ export function RegisterForm() {
         
         <div>
           <label htmlFor="surname" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Soyad
+            Surname
           </label>
           <Input
             id="surname"
@@ -154,7 +153,7 @@ export function RegisterForm() {
             value={form.surname}
             onChange={handleInputChange('surname')}
             error={errors.surname}
-            placeholder="Soyadınız"
+            placeholder="Surname"
             required
           />
           {errors.surname && (
@@ -166,7 +165,7 @@ export function RegisterForm() {
       {/* Email Field */}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          E-posta
+          Email
         </label>
         <Input
           id="email"
@@ -174,7 +173,7 @@ export function RegisterForm() {
           value={form.email}
           onChange={handleInputChange('email')}
           error={errors.email}
-          placeholder="ornek@email.com"
+          placeholder="example@email.com"
           required
         />
         {errors.email && (
@@ -185,7 +184,7 @@ export function RegisterForm() {
       {/* Password Field */}
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Şifre
+          Password
         </label>
         <Input
           id="password"
@@ -204,7 +203,7 @@ export function RegisterForm() {
       {/* Password Confirmation Field */}
       <div>
         <label htmlFor="passwordConfirm" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Şifre Tekrarı
+          Confirm Password
         </label>
         <Input
           id="passwordConfirm"
@@ -227,7 +226,7 @@ export function RegisterForm() {
         isLoading={isLoading}
         disabled={isLoading}
       >
-        {isLoading ? 'Kaydediliyor...' : 'Kayıt Ol'}
+        {isLoading ? 'Registering...' : 'Register'}
       </Button>
     </form>
   )

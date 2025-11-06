@@ -287,25 +287,6 @@ export default function ProfilePage() {
                           <span className="text-gray-900 dark:text-white">{profile.Email}</span>
                         </div>
                       </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Roles
-                        </label>
-                        <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                          <Shield className="h-4 w-4 text-gray-400 mr-2" />
-                          <div className="flex flex-wrap gap-2">
-                            {profile.Roles.map((role, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                              >
-                                {role}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 ) : (

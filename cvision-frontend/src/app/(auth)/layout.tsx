@@ -106,10 +106,10 @@ export default function AuthLayout({
               className="h-16 w-auto mb-8 drop-shadow-lg"
             />
             <h1 className="text-4xl font-bold mb-6 leading-tight">
-              Hoş Geldiniz
+              Welcome
             </h1>
             <p className="text-xl text-blue-100 leading-relaxed max-w-md">
-              Güvenli ve modern platformumuzda size özel deneyimi keşfedin
+              CVision is your go-to platform for managing your CVs and job applications with ease.
             </p>
           </div>
           
@@ -117,15 +117,15 @@ export default function AuthLayout({
           <div className="space-y-4">
             <div className="flex items-center space-x-3 text-blue-100">
               <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
-              <span>Güvenli giriş sistemi</span>
+              <span>Security login system</span>
             </div>
             <div className="flex items-center space-x-3 text-blue-100">
               <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
-              <span>Modern kullanıcı deneyimi</span>
+              <span>Easy CV management</span>
             </div>
             <div className="flex items-center space-x-3 text-blue-100">
               <div className="w-2 h-2 bg-blue-300 rounded-full"></div>
-              <span>7/24 destek</span>
+              <span>7/24 support</span>
             </div>
           </div>
         </div>

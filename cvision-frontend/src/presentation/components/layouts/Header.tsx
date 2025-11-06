@@ -164,16 +164,6 @@ export function Header({ isAuthenticated = false }: HeaderProps) {
                   Admin Panel
                 </Link>
               </RoleGuard>
-
-              {/* Users with management permissions */}
-              <RoleGuard requiredRoles={['Admin', 'Moderator']}>
-                <Link 
-                  href="/manage-users" 
-                  className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors font-medium"
-                >
-                  Manage Users
-                </Link>
-              </RoleGuard>
             </>
           ) : (
             <>
